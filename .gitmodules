@@ -1,0 +1,3 @@
+[submodule "src/web3protocol"]
+	path = src/web3protocol
+	url = https://github.com/ComfyGummy/web3protocol
