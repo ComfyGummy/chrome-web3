@@ -1,0 +1,33 @@
+{
+	"manifest_version": 3,
+	"name": "web3://",
+	"version": "1.0",
+	"description": "Access web3:// URLs",
+	"background": {
+		"service_worker": "chrome-web3-extension-service-worker.js",
+		"type": "module"
+	},
+	"permissions": [
+		"declarativeNetRequest"
+	],
+	"omnibox": {
+		"keyword" : "web3"
+	},
+	"host_permissions": [
+		"http://*.web3/*",
+		"https://*.web3/*",
+		"http://*.w3eth.io/*",
+		"https://*.w3eth.io/*",
+		"http://*.w3link.io/*",
+		"https://*.w3link.io/*"
+	],
+	"web_accessible_resources": [
+		{
+			"resources": [ "*" ],
+			"matches": [ "<all_urls>" ]
+		}
+	],
+	"content_security_policy": {
+		"extension_pages": "default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src 'self'; object-src 'self'; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:;"
+	}
+}

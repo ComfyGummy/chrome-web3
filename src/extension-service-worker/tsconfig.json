@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"moduleResolution": "node",
+		"types": [
+			"chrome",
+			"node",
+		],
+		"lib": ["webworker", "ES2021.String"],
+	},
+}
