@@ -1,6 +1,6 @@
-# Chrome extension for `web3://` (ERC-4804) URL scheme
+# Chrome extension for `web3://` (ERC-4804) URLs
 
-This repository contains the code for a Chrome extension implementing the [ERC-4804] URL scheme (`web3://` URLs). This can be used to create censorship-resistant websites hosted directly on EVM-compatible blockchains such as Ethereum.
+This repository contains the code for a Chrome extension implementing the [ERC-4804] URLs (`web3://` URLs). This can be used to create censorship-resistant websites hosted directly on EVM-compatible blockchains such as Ethereum.
 
 ## Features
 
@@ -119,7 +119,7 @@ Things that could be improved about the extension:
 
 - Reduce website incompatibilities that currently exist, such as the ENS frontend.
 - Allow the user to customize the RPC endpoint used by the extension.
-- Get Chrome to add `web3` to the list of URL schemes that it allows extensions to register as a handler for. `ipfs://` is currently one of these schemes. As an IANA-registered URL scheme, it should be possible to add `web3` to this list.
+- Get Chrome to add `web3://` to the list of URL schemes that it allows extensions to register as a handler for. `ipfs://` is currently one of these schemes. As an IANA-registered URL scheme, it should be possible to add `web3://` to this list.
 - Implement automated internal retries. Currently, some requests randomly fail with "execution reverted" error messages. This could be handled in the [`web3protocol` library][web3protocol library] as well.
 - Implement light client support, rather than contacting EVM RPC endpoints. This may be possible using [Helios] compiled to WebAssembly, which is supported in Chrome extensions.
 - Implement favicon support.

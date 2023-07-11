@@ -1,40 +1,53 @@
 const { parseUrl, fetchParsedUrl, fetchUrl } = require('web3protocol');
 const { Base64 } = require('js-base64');
 
+// Represents a request made to the extension.
 interface extRequest {
+	// The underlying chrome-extension:// request being made to the extension.
 	request: Request;
+	// The rewritten URL that we are serving.
 	url: string;
 }
 
+// The result of resolving the "domain" component of an ERC-4804 address.
 interface web3UrlNameResolution {
 	chainId: number;
 	resolvedName: string;
 }
 
+// A parsed ERC-4804 URL.
 interface web3Url {
 	nameResolution: web3UrlNameResolution;
 	contractAddress: string;
 	chainId: number;
 }
 
+// The result of fetching a ERC-4804 URL.
 interface web3FetchResult {
 	output: Uint8Array;
 	mimeType?: string;
 	parsedUrl: web3Url;
 }
 
+// Accepted types that can be served back to the user.
 type httpBody = string | Uint8Array | Blob | ReadableStream;
 
+// A function that processes an HTML response body.
 type web3BodyProcessor = (origin: web3Url, body: string) => string;
 
+// A key-value dictionary of HTTP headers.
+// Keys are case-insensitive.
 interface httpHeaders {
 	[key: string]: string
 }
 
+// Returns whether development mode is enabled.
+// When it is enabled, extra logging is done to the console.
 function developmentMode() {
 	return true;
 }
 
+// Constants.
 const chromeExtensionPrefix = chrome.runtime.getURL('/');
 const chromeExtensionPrefixLength = chromeExtensionPrefix.length;
 const web3Scheme = 'web3://';
@@ -54,6 +67,9 @@ const nakedAttributeRegex = /([-_\w\.]+)/i;
 const testHttpUrl = 'https://test.null/';
 const testHttpUrlLength = testHttpUrl.length;
 
+// Resolves a relative or absolute path from within a web3 URL origin.
+// For example:
+// resolveUrl(web3Url("web3://example.eth/some/thing"), "../other") = "web3://example.eth/some/other"
 function resolveUrl(origin: web3Url, path: string): string {
 	if (path.startsWith(web3Scheme) || path.startsWith(httpScheme) || path.startsWith(httpsScheme)) {
 		return path;
@@ -78,6 +94,10 @@ function resolveUrl(origin: web3Url, path: string): string {
 	return web3Scheme + origin.contractAddress + absolutePath;
 }
 
+// Resolves a relative or absolute path from within a web3 URL origin,
+// but returns an HTTP URL that uses the fictitious ".web3" TLD instead of a web3:// URL.
+// For example:
+// resolveUrl(web3Url("web3://example.eth/some/thing"), "../other") = "https://example.eth.web3/some/other"
 function resolveRewritableUrl(origin: web3Url, path: string): string {
 	let resolved = resolveUrl(origin, path);
 	if (!resolved.startsWith(web3Scheme)) {
@@ -101,6 +121,7 @@ function resolveRewritableUrl(origin: web3Url, path: string): string {
 	return httpsScheme + origin.contractAddress + '.web3' + absolutePath;
 }
 
+// Returns whether the given string looks like HTML.
 function looksLikeHTML(code: string): boolean {
 	const lowerCode = code.trimStart().toLowerCase();
 	if (lowerCode.startsWith('<!doctype html')) {
@@ -115,6 +136,8 @@ function looksLikeHTML(code: string): boolean {
 	return false;
 }
 
+// Processes a <script> tag match result.
+// Used during HTML processing.
 function processHTMLScriptTag(origin: web3Url, match: string, scriptAttributes: string, body: string): string {
 	let result = ['<script'];
 	let scriptSrc = '';
@@ -168,6 +191,8 @@ function processHTMLScriptTag(origin: web3Url, match: string, scriptAttributes: 
 	return result.join(' ');
 }
 
+// Processes a <link> tag match result.
+// Used during HTML processing.
 function processHTMLLinkTag(origin: web3Url, match: string, linkAttributes: string): string {
 	let result = ['<link'];
 	let linkRel = '';
@@ -225,6 +250,7 @@ function processHTMLLinkTag(origin: web3Url, match: string, linkAttributes: stri
 	return result.join(' ');
 }
 
+// Rewrites HTML code to work in a chrome-extension context.
 function processHTML(origin: web3Url, code: string): string {
 	const baseTag = '<base href="' + resolveRewritableUrl(origin, '/') + '" />'
 	code = code.replaceAll(baseTagRegexGlobal, '');
@@ -246,14 +272,15 @@ function processHTML(origin: web3Url, code: string): string {
 	return code;
 }
 
+// Rewrites JavaScript code to prevent access to the chrome APIs.
 function processJavascript(origin: web3Url, code: string): string {
-	let random = String(Math.random()).replaceAll('.', '');
 	return `
 var chrome = null;
 window.chrome = null;
 ` + code;
 }
 
+// Creates an HTTP Response object with the given body, response code, and HTTP headers.
 function makeResponse(body: httpBody, responseCode: number, headers: httpHeaders): Response {
 	let responseOptions: ResponseInit = {
 		'status': responseCode,
@@ -272,6 +299,10 @@ function makeResponse(body: httpBody, responseCode: number, headers: httpHeaders
 	return new Response(body, responseOptions);
 }
 
+// Create an HTTP Response object representing the content of the passed-in web3Promise.
+// forceMime may be used to override the mime-type returned in the response.
+// If the web3 request is successful, the list of processors will be run over the
+// response body.
 async function makeWeb3Response(web3Promise: Promise<web3FetchResult>, forceMime: string, processors: web3BodyProcessor[]): Promise<Response> {
 	try {
 		const result = await web3Promise;
@@ -306,6 +337,7 @@ async function makeWeb3Response(web3Promise: Promise<web3FetchResult>, forceMime
 	}
 }
 
+// Serves an extension request for the web3:// URL scheme.
 async function serveWeb3Request(extReq: extRequest): Promise<Response> {
 	const web3Promise = fetchUrl(extReq.url);
 	let result: web3FetchResult;
@@ -326,6 +358,7 @@ async function serveWeb3Request(extReq: extRequest): Promise<Response> {
 	}
 }
 
+// Serves an extension request for the web3scripturl:// URL scheme.
 async function serveWeb3ScriptURLRequest(extReq: extRequest): Promise<Response> {
 	const encodedUrl = extReq.url.substring(web3ScriptUrlScheme.length);
 	const decodedUrl = Base64.decode(encodedUrl);
@@ -369,6 +402,7 @@ async function serveWeb3ScriptURLRequest(extReq: extRequest): Promise<Response> 
 	});
 }
 
+// Serves an extension request for the web3scriptinline:// URL scheme.
 async function serveWeb3ScriptInlineRequest(extReq: extRequest): Promise<Response> {
 	const encodedScript = extReq.url.substring(web3ScriptInlineScheme.length);
 	const decodedScript = Base64.decode(encodedScript);
@@ -378,6 +412,8 @@ async function serveWeb3ScriptInlineRequest(extReq: extRequest): Promise<Respons
 	});
 }
 
+// Main request entry point.
+// Serves a request made to the extension service worker.
 async function handleRequest(request: Request): Promise<Response> {
 	let url = request.url;
 	if (url.startsWith(chromeExtensionPrefix)) {
@@ -412,10 +448,12 @@ async function handleRequest(request: Request): Promise<Response> {
 	}
 }
 
+// Handle fetch event in the extension service worker.
 self.addEventListener('fetch', (event: FetchEvent) => {
 	event.respondWith(handleRequest(event.request));
 });
 
+// Handle omnibox input events to support the "web3" omnibox keyword.
 chrome.omnibox.onInputEntered.addListener((text, disposition) => {
 	if (text.startsWith('web3://')) {
 		text = text.substring('web3://'.length);
@@ -439,11 +477,15 @@ chrome.omnibox.onInputEntered.addListener((text, disposition) => {
 	}
 });
 
+// Represents a *.w3link.io gateway subdomain.
 interface gatewayChain {
+	// The subdomain of w3link.io.
 	w3link: string;
+	// The chain ID that this w3link.io gateway corresponds to.
 	chainId: number;
 };
 
+// List of known *.w3link.io gateways.
 const gatewayChains: gatewayChain[] = [
 	{w3link: 'eth',             chainId: 1},
 	{w3link: 'w3q-g',           chainId: 3334},
@@ -462,6 +504,7 @@ const gatewayChains: gatewayChain[] = [
 	{w3link: 'evmos',           chainId: 9001},
 ];
 
+// List of all declarativeNetRequest rule resource types.
 const allDeclarativeNetRequestRuleResourceTypes: chrome.declarativeNetRequest.ResourceType[] = [
 	chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
 	chrome.declarativeNetRequest.ResourceType.SUB_FRAME,
@@ -478,6 +521,8 @@ const allDeclarativeNetRequestRuleResourceTypes: chrome.declarativeNetRequest.Re
 	chrome.declarativeNetRequest.ResourceType.OTHER,
 ];
 
+// Generate declarativeNetRequest redirect rules for redirecting requests
+// to the extension service worker.
 function getDeclarativeNetRequestRules(): chrome.declarativeNetRequest.Rule[] {
 	let rules: chrome.declarativeNetRequest.Rule[] = [
 		// Internal *.web3 rewrite rule.
@@ -537,6 +582,9 @@ function getDeclarativeNetRequestRules(): chrome.declarativeNetRequest.Rule[] {
 	return rules;
 }
 
+// Get the IDs of declarativeNetRequest rules.
+// This function should return all the IDs used by any declarativeNetRequest rules
+// that any version of this extension ever used.
 function getAllPastDeclarativeNetRequestRuleIds(): number[] {
 	let ruleIds = [];
 	for (let rule of getDeclarativeNetRequestRules()) {
@@ -545,6 +593,7 @@ function getAllPastDeclarativeNetRequestRuleIds(): number[] {
 	return ruleIds;
 }
 
+// Set declarativeNetRequest redirect rules for the extension.
 chrome.declarativeNetRequest.updateDynamicRules({
 	removeRuleIds: getAllPastDeclarativeNetRequestRuleIds(),
 	addRules: getDeclarativeNetRequestRules(),
