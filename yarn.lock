@@ -949,10 +949,10 @@ watchpack@^2.4.0:
     glob-to-regexp "^0.4.1"
     graceful-fs "^4.1.2"
 
-web3protocol@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/web3protocol/-/web3protocol-0.1.1.tgz#8520dcb5400ce38ee9665c23a97b52445acd701a"
-  integrity sha512-7Yob0n0rOGjxnlKJ94SdS8Nm+IXZ9EMn03RbfBmibZF6vS2mp9N5R8uiE6IpHme6bbwP1smNPTPC0AtqUEjYfQ==
+web3protocol@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/web3protocol/-/web3protocol-0.1.2.tgz#88aa2136e2e78a4c8b0d2e49a44a1ad8d509e07b"
+  integrity sha512-/cmvW9C/V27e56H8xAS9y5h6rNkDEarcfYUQNRfKsqhvHgStZXw0zx+oMuMvYR6TfXPwsw2vI/CdCciB1oLmTQ==
   dependencies:
     mime-types "^2.1.35"
     viem "^0.3.19"

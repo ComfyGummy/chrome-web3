@@ -50,7 +50,7 @@ The web3 pages need to be served in a `chrome-extension` context in order to hav
 
 For the same reason, connecting to web3 wallets (like Metamask) via `window.ethereum` also does not work, because this object is not injected on `chrome-extension` pages. It may be possible to implement this by implementing a shim object that does get injected and that relays commands back and forth using [extension message passing].
 
-Integrating this extension's code within existing browser wallet extensions would also be unwise. This is because this extension executes remotely-fetched JavaScript within a `chrome-extension` context. This is OK because the extension only requests a very limited set of capabilities and tries to mitigate access to the Chrome APIs. Chrome also does a good job to isolate extensions from each other, so even if foreign JavaScript code were to take over the `chrome-extension` origin, the extent of its damage would be limtied. However, a web3 wallet extension needs a lot more permissions to function, so it would be unsafe to use this technique within other wallet extensions as they stand.
+Integrating this extension's code within existing browser wallet extensions would also be unwise. This is because this extension executes remotely-fetched JavaScript within a `chrome-extension` context. This is OK because the extension only requests a very limited set of capabilities and tries to mitigate access to the Chrome APIs. Chrome also does a good job to isolate extensions from each other, so even if foreign JavaScript code were to take over the `chrome-extension` origin, the extent of its damage would be limited. However, a web3 wallet extension needs a lot more permissions to function, so it would be unsafe to use this technique within other wallet extensions as they stand.
 
 ## How it works
 
@@ -71,7 +71,7 @@ The extension also adds "web3" as an [omnibox keyword]. This allows users to int
 
 ## How to install
 
-This extension is not yet code-reviewed, and it still fails to display from `web3://` sites properly. Until this is fixed, it will not be available on the Chrome web store.
+This extension is not yet code-reviewed, and it still fails to display some `web3://` sites properly. Until this is fixed, it will not be available on the Chrome web store.
 
 ## How to compile
 
@@ -96,9 +96,6 @@ v20.4.0
 # Check out this repository.
 $ git clone --recursive https://github.com/ComfyGummy/chrome-web3
 $ cd chrome-web3
-
-# Make sure you actually downloaded the submodules.
-$ git submodule update --init --recursive
 
 # Install dependencies via yarn.
 $ yarn install --frozen-lockfile

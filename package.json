@@ -14,12 +14,12 @@
   },
   "private": true,
   "scripts": {
-    "build": "mkdir -p node_modules/web3protocol && cp -r src/web3protocol/* node_modules/web3protocol/ && yarn webpack && cp src/manifest.json dist/"
+    "build": "yarn webpack && cp src/manifest.json dist/"
   },
   "dependencies": {
     "buffer": "^6.0.3",
     "js-base64": "^3.7.5",
     "path-browserify": "^1.0.1",
-    "web3protocol": "^0.1.1"
+    "web3protocol": "^0.1.2"
   }
 }
