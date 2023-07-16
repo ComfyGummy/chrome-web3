@@ -60,7 +60,7 @@ export class htmlProcessor {
 			}
 		}
 		if (scriptSrc != '') {
-			result.push('src="' + chromeExtensionPrefix + web3ScriptUrlScheme + Base64.encode(this.url.rewritableMaybeHttp(scriptSrc)) + '"');
+			result.push('src="' + chromeExtensionPrefix + web3ScriptUrlScheme + Base64.encode(this.url.maybeHttp(scriptSrc)) + '"');
 		} else {
 			result.push('src="' + chromeExtensionPrefix + web3ScriptInlineScheme + Base64.encode(body.trim()) + '"');
 		}
@@ -73,6 +73,7 @@ export class htmlProcessor {
 	protected processHTMLLinkTag = (match: string, linkAttributes: string): string => {
 		let result = ['<link'];
 		let linkRel = '';
+		let linkAs = '';
 		let linkHref = '';
 		for (let attribute of linkAttributes.split(/\s+/g)) {
 			if (attribute == '') {
@@ -82,6 +83,10 @@ export class htmlProcessor {
 			if (attributeMatch) {
 				if (attributeMatch[1] == 'rel') {
 					linkRel = attributeMatch[3];
+					continue;
+				}
+				if (attributeMatch[1] == 'as') {
+					linkAs = attributeMatch[3];
 					continue;
 				}
 				if (attributeMatch[1] == 'href') {
@@ -97,6 +102,10 @@ export class htmlProcessor {
 					linkRel = attributeMatch[3];
 					continue;
 				}
+				if (attributeMatch[1] == 'as') {
+					linkAs = attributeMatch[3];
+					continue;
+				}
 				if (attributeMatch[1] == 'href') {
 					linkHref = attributeMatch[3];
 					continue;
@@ -110,6 +119,10 @@ export class htmlProcessor {
 					linkRel = '';
 					continue;
 				}
+				if (attributeMatch[1] == 'as') {
+					linkAs = '';
+					continue;
+				}
 				if (attributeMatch[1] == 'href') {
 					linkHref = '';
 					continue;
@@ -118,10 +131,20 @@ export class htmlProcessor {
 				continue;
 			}
 		}
+		if (linkRel == 'prefetch' && linkAs == 'script') {
+			result.push('rel="prefetch"');
+			result.push('rel="script"');
+			result.push('href="' + chromeExtensionPrefix + web3ScriptUrlScheme + Base64.encode(this.url.maybeHttp(linkRel)) + '"');
+			result.push('/>');
+			return result.join(' ');
+		}
 		if (linkRel != 'stylesheet' && linkRel != 'icon') {
 			return '';
 		}
 		result.push('rel="' + linkRel + '"');
+		if (linkAs != '') {
+			result.push('as="' + he.encode(linkAs) + '"');
+		}
 		result.push('href="' + he.encode(this.url.rewritableMaybeHttp(linkHref)) + '"');
 		result.push('/>');
 		return result.join(' ');

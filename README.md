@@ -65,7 +65,7 @@ When receiving a request, the extension performs a web3 fetch request using the 
 - All `<script>` tags are rewritten. There are two types of `<script>` tags:
   - **Scripts that import code from other URLs** (`<script src="{SCRIPT_URL}"></script>`): Since the `Content-Security-Policy` of Chrome extension pages does not allow fetching external scripts, the `src` attribute gets rewritten to `chrome-extension://{EXTENSION_ID}/web3scripturl://{base64(SCRIPT_URL)}`. The extension service worker knows to handle requests starting with `web3scripturl://` as requests for fetching remote JavaScript code.
   - **Inline scripts** (`<script>{SCRIPT_CODE}</script>`): Since the `Content-Security-Policy` of Chrome extension pages does not allow executing inline scripts, the `{SCRIPT_CODE}` section of the `<script>` tag is removed, and instead the `<script>` tag is rewritten as `<script src="chrome-extension://{EXTENSION_ID}/web3scriptinline://{base64(SCRIPT_CODE)}"></script>`. The extension service worker knows to handle requests starting with `web3scriptinline://` as requests for serving inline JavaScript code.
-  - In both cases, the service worker injects some code to prevent the remote JavaScript code from being able to access the `chrome` APIs.
+- A `<script>` tag is added before all other `<script>` tags, which resolves some incompatibilities due to being served from a `chrome-extension` origin. This also takes care of rewriting the URLs of deferred loading of future scripts.
 
 The extension also adds "web3" as an [omnibox keyword]. This allows users to interact with it by typing "web3" and then pressing the spacebar in the browser's address bar. This enables the user to type or paste in `web3://` URLs in the address bar, albeit with the extra burden of activating the omnibox keyword.
 
@@ -114,7 +114,6 @@ Now browse to `https://w3url.w3eth.io/` and see what happens.
 
 Things that could be improved about the extension:
 
-- Reduce website incompatibilities that currently exist, such as the ENS frontend.
 - Allow the user to customize the RPC endpoint used by the extension.
 - Get Chrome to add `web3://` to the list of URL schemes that it allows extensions to register as a handler for. `ipfs://` is currently one of these schemes. As an IANA-registered URL scheme, it should be possible to add `web3://` to this list.
 - Implement automated internal retries. Currently, some requests randomly fail with "execution reverted" error messages. This could be handled in the [`web3protocol` library][web3protocol library] as well.

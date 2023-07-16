@@ -58,6 +58,7 @@ const web3Scheme = 'web3://';
 const web3ScriptUrlScheme = 'web3scripturl://';
 const web3ScriptInlineScheme = 'web3scriptinline://';
 const web3ScriptInitScheme = 'web3scriptinit://';
+const web3DevNullScheme = 'web3devnull://';
 const httpScheme = 'http://';
 const httpsScheme = 'https://';
 
@@ -126,6 +127,7 @@ async function serveWeb3Request(w3url: web3Url): Promise<Response> {
 		result = await web3Promise;
 	} catch (e) {
 		if (developmentMode()) {
+			console.log('Failed to fetch', w3url, ':', e);
 			throw e;
 		}
 		return makeWeb3Response(web3Promise, 'text/plain', null);
@@ -149,6 +151,9 @@ async function serveWeb3ScriptURLRequest(extReq: extRequest): Promise<Response> 
 		// Do nothing.
 	}
 	if (w3url !== null) {
+		if (developmentMode()) {
+			console.log('Serving script URL request:', decodedUrl, 'decoded to', w3url);
+		}
 		return makeWeb3Response(fetchUrl(w3url.toString()), 'text/javascript', null);
 	}
 	if (!decodedUrl.startsWith(httpsScheme) && !decodedUrl.startsWith(httpScheme)) {
@@ -159,31 +164,13 @@ async function serveWeb3ScriptURLRequest(extReq: extRequest): Promise<Response> 
 			'content-type': 'text-plain',
 		});
 	}
-	const scriptRequest = fetch(decodedUrl, {
-		'method': 'GET',
-		'mode': 'cors',
-		'redirect': 'follow',
-	});
-	let result: Response;
-	let scriptBody: string;
-	try {
-		result = await scriptRequest;
-		scriptBody = await result.text();
-	} catch (e) {
-		if (developmentMode()) {
-			// For development purposes:
-			throw e;
-		}
-		let errorMessage = String(e);
-		if (e instanceof Error) {
-			errorMessage = e.message;
-		}
-		return makeResponse(errorMessage, 502, {
-			'content-type': 'text/plain',
-		});
+	if (developmentMode()) {
+		console.log('Serving HTTP script URL request:', decodedUrl);
 	}
-	return makeResponse(scriptBody, result.status, {
-		'content-type': 'text/javascript',
+	return fetch(decodedUrl, {
+		'method': 'GET',
+		'mode': 'no-cors',
+		'redirect': 'follow',
 	});
 }
 
@@ -196,6 +183,7 @@ async function serveWeb3ScriptInlineRequest(extReq: extRequest): Promise<Respons
 	});
 }
 
+// Serves an extension request for the web3scriptinit:// URL scheme.
 async function serveWeb3ScriptInitRequest(extReq: extRequest): Promise<Response> {
 	const encodedUrl = extReq.url.substring(web3ScriptInitScheme.length);
 	const decodedUrl = Base64.decode(encodedUrl);
@@ -203,6 +191,16 @@ async function serveWeb3ScriptInitRequest(extReq: extRequest): Promise<Response>
 	return makeResponse(new initScript(w3url).render(), 200, {
 		'content-type': 'text/javascript',
 	});
+}
+
+// Serves an extension request for the web3devnull:// URL scheme.
+async function serveWeb3DevNullRequest(extReq: extRequest): Promise<Response> {
+	const maybeMimeType = extReq.url.substring(web3DevNullScheme.length);
+	let headers = {};
+	if (maybeMimeType !== '') {
+		headers['content-type'] = maybeMimeType;
+	}
+	return makeResponse('', 200, headers);
 }
 
 // Main request entry point.
@@ -227,6 +225,8 @@ async function handleRequest(request: Request): Promise<Response> {
 		return serveWeb3ScriptInlineRequest(extReq);
 	} else if (url.startsWith(web3ScriptInitScheme)) {
 		return serveWeb3ScriptInitRequest(extReq);
+	} else if (url.startsWith(web3DevNullScheme)) {
+		return serveWeb3DevNullRequest(extReq);
 	} else {
 		let w3url: web3Url;
 		try {

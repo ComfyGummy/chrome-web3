@@ -64,6 +64,15 @@ export class web3Url {
 		return new web3Url(urlRoot + testUrl.substring(testHttpUrlLength));
 	}
 
+	// maybeHttp resolves a URL but also accepts and returns HTTP URLs as-is.
+	// For web3:// URLs, it will return the string version of the URL.
+	maybeHttp(href: string): string {
+		if (href.startsWith(httpsScheme) || href.startsWith(httpScheme)) {
+			return href;
+		}
+		return this.resolve(href).toString();
+	}
+
 	// rewritableMaybeHttp resolves a URL but also accepts and returns HTTP URLs as-is.
 	// For web3:// URLs, it will return the rewritable version of it.
 	rewritableMaybeHttp(href: string): string {
@@ -75,5 +84,13 @@ export class web3Url {
 
 	getRoot(): web3Url {
 		return this.resolve('/');
+	}
+
+	origin(): string {
+		if (this.path !== '/') {
+			return this.getRoot().origin();
+		}
+		let root = this.toString();
+		return root.substring(0, root.length - 1);
 	}
 }
