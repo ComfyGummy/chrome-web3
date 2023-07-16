@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
+    "he": "^1.2.0",
     "js-base64": "^3.7.5",
     "path-browserify": "^1.0.1",
     "web3protocol": "^0.1.2"
