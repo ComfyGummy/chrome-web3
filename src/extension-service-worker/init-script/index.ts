@@ -13,6 +13,7 @@ interface jsFunction {
 const chromeExtensionPrefix = chrome.runtime.getURL('/');
 const web3SchemeProtocol = 'web3';
 const web3Scheme = web3SchemeProtocol + '://';
+const dataScheme = 'data:';
 const httpScheme = 'http://';
 const httpsScheme = 'https://';
 const web3ScriptUrlScheme = 'web3scripturl://';
@@ -33,6 +34,7 @@ function escape(s: string): jsExpression {
 const chromeExtensionPrefixEsc = escape(chromeExtensionPrefix);
 const web3SchemeProtocolEsc = escape(web3SchemeProtocol);
 const web3SchemeEsc = escape(web3Scheme);
+const dataSchemeEsc = escape(dataScheme);
 const httpSchemeEsc = escape(httpScheme);
 const httpsSchemeEsc = escape(httpsScheme);
 const web3ScriptUrlSchemeEsc = escape(web3ScriptUrlScheme);
@@ -151,7 +153,7 @@ export class initScript {
 		return (
 `(() => {
 	let url;
-	if (${href}.startsWith(${web3SchemeEsc}) || ${href}.startsWith(${httpsSchemeEsc}) || ${href}.startsWith(${httpSchemeEsc})) {
+	if (${href}.startsWith(${web3SchemeEsc}) || ${href}.startsWith(${httpsSchemeEsc}) || ${href}.startsWith(${httpSchemeEsc}) || ${href}.startsWith(${dataSchemeEsc})) {
 		url = ${href};
 	} else if (${href}.startsWith("//")) {
 		url = ${web3SchemeProtocolEsc} + ${href};

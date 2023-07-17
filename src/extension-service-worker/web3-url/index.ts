@@ -1,6 +1,7 @@
 const web3SchemeProtocol = 'web3';
 const urlSchemeRegex = /^\w+:\/\//i;
 const web3Scheme = web3SchemeProtocol + '://';
+const dataScheme = 'data:';
 const httpScheme = 'http://';
 const httpsScheme = 'https://';
 const web3UrlRegex = /^web3:\/\/(?:|(?<userInfo>[^@]+)@)(?<hostname>[^:\/]+)(?:|:(?<chainId>[1-9]\d*))(?<path>|\/.*)$/i;
@@ -67,7 +68,7 @@ export class web3Url {
 	// maybeHttp resolves a URL but also accepts and returns HTTP URLs as-is.
 	// For web3:// URLs, it will return the string version of the URL.
 	maybeHttp(href: string): string {
-		if (href.startsWith(httpsScheme) || href.startsWith(httpScheme)) {
+		if (href.startsWith(httpsScheme) || href.startsWith(httpScheme) || href.startsWith(dataScheme)) {
 			return href;
 		}
 		return this.resolve(href).toString();
@@ -76,7 +77,7 @@ export class web3Url {
 	// rewritableMaybeHttp resolves a URL but also accepts and returns HTTP URLs as-is.
 	// For web3:// URLs, it will return the rewritable version of it.
 	rewritableMaybeHttp(href: string): string {
-		if (href.startsWith(httpsScheme) || href.startsWith(httpScheme)) {
+		if (href.startsWith(httpsScheme) || href.startsWith(httpScheme) || href.startsWith(dataScheme)) {
 			return href;
 		}
 		return this.resolve(href).toRewritable();
