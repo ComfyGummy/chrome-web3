@@ -167,10 +167,31 @@ async function serveWeb3ScriptURLRequest(extReq: extRequest): Promise<Response> 
 	if (developmentMode()) {
 		console.log('Serving HTTP script URL request:', decodedUrl);
 	}
-	return fetch(decodedUrl, {
+	const scriptRequest = fetch(decodedUrl, {
 		'method': 'GET',
-		'mode': 'no-cors',
+		'mode': 'cors',
 		'redirect': 'follow',
+	});
+	let result: Response;
+	let scriptBody: string;
+	try {
+		result = await scriptRequest;
+		scriptBody = await result.text();
+	} catch (e) {
+		if (developmentMode()) {
+			// For development purposes:
+			throw e;
+		}
+		let errorMessage = String(e);
+		if (e instanceof Error) {
+			errorMessage = e.message;
+		}
+		return makeResponse(errorMessage, 502, {
+			'content-type': 'text/plain',
+		});
+	}
+	return makeResponse(scriptBody, result.status, {
+		'content-type': 'text/javascript',
 	});
 }
 
