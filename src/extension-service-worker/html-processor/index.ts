@@ -145,7 +145,7 @@ export class htmlProcessor {
 		if (linkAs != '') {
 			result.push('as="' + he.encode(linkAs) + '"');
 		}
-		result.push('href="' + he.encode(this.url.rewritableMaybeHttp(linkHref)) + '"');
+		result.push('href="' + he.encode(this.url.extensionMaybeHttp(linkHref)) + '"');
 		result.push('/>');
 		return result.join(' ');
 	}

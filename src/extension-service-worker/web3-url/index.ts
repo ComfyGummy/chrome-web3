@@ -1,3 +1,4 @@
+const chromeExtensionPrefix = chrome.runtime.getURL('/');
 const web3SchemeProtocol = 'web3';
 const urlSchemeRegex = /^\w+:\/\//i;
 const web3Scheme = web3SchemeProtocol + '://';
@@ -37,6 +38,10 @@ export class web3Url {
 		return web3Scheme + (this.userInfo ? (this.userInfo + '@') : '') + this.hostname + (this.chainId != 1 ? (':' + this.chainId.toString()) : '') + this.path;
 	}
 
+	toExtension(): string {
+		return chromeExtensionPrefix + this.toString();
+	}
+
 	toRewritable(): string {
 		return httpsScheme + (this.userInfo ? (this.userInfo + '@') : '') + this.hostname + fictitiousWeb3Tld + (this.chainId != 1 ? (':' + this.chainId.toString()) : '') + this.path;
 	}
@@ -72,6 +77,15 @@ export class web3Url {
 			return href;
 		}
 		return this.resolve(href).toString();
+	}
+
+	// extensionMaybeHttp resolves a URL but also accepts and returns HTTP URLs as-is.
+	// For web3:// URLs, it will return the chrome-extension:// version of the URL.
+	extensionMaybeHttp(href: string): string {
+		if (href.startsWith(httpsScheme) || href.startsWith(httpScheme) || href.startsWith(dataScheme)) {
+			return href;
+		}
+		return this.resolve(href).toExtension();
 	}
 
 	// rewritableMaybeHttp resolves a URL but also accepts and returns HTTP URLs as-is.

@@ -118,7 +118,6 @@ Things that could be improved about the extension:
 - Get Chrome to add `web3://` to the list of URL schemes that it allows extensions to register as a handler for. `ipfs://` is currently one of these schemes. As an IANA-registered URL scheme, it should be possible to add `web3://` to this list.
 - Implement automated internal retries. Currently, some requests randomly fail with "execution reverted" error messages. This could be handled in the [`web3protocol` library][web3protocol library] as well.
 - Implement light client support, rather than contacting EVM RPC endpoints. This may be possible using [Helios] compiled to WebAssembly, which is supported in Chrome extensions.
-- Implement favicon support.
 - Add configuration to disable websites from using non-`web3://` URLs (external JavaScript). `web3://` websites should not depend on web2 CDNs serving mutable JavaScript code. Pre-bake popular JavaScript into the extension so that they don't need to be loaded from the chain all the time.
 - Implement better caching mechanism. Right now the extension hard-codes a 30 minute caching buffer in order to improve page loading speed over the more correct `no-cache` setting. This may not be appropriate for all use-cases. The ERC-4804 spec needs a mechanism to specify the equivalent of the HTTP `Cache-Control` header. This could be done in a similar manner as [ERC-7087].
 - Figure out whether it is possible to port the service worker into a [sandbox context][extension sandbox pages].
