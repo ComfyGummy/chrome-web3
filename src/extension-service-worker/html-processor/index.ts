@@ -166,11 +166,13 @@ export class htmlProcessor {
 		const injectedTags = this.baseTag() + this.initJavaScriptTag();
 		const headMatch = code.match(headTagRegex);
 		if (headMatch) {
-			code = code.substring(0, headMatch.index) + injectedTags + code.substring(headMatch.index);
+			let insertIndex = headMatch.index + headMatch[0].length;
+			code = code.substring(0, insertIndex) + injectedTags + code.substring(insertIndex);
 		} else {
 			const htmlMatch = code.match(htmlTagRegex);
 			if (htmlMatch) {
-				code = code.substring(0, htmlMatch.index) + injectedTags + code.substring(htmlMatch.index);
+				let insertIndex = htmlMatch.index + htmlMatch[0].length;
+				code = code.substring(0, insertIndex) + injectedTags + code.substring(insertIndex);
 			} else {
 				code = '<html><head>' + injectedTags + '</head>' + code + '</html>';
 			}
