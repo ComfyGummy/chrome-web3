@@ -1,8 +1,8 @@
 {
 	"manifest_version": 3,
 	"name": "web3://",
-	"version": "1.0",
-	"description": "Access web3:// URLs",
+	"version": "0.1",
+	"description": "[Pre-release] Access web3:// URLs",
 	"background": {
 		"service_worker": "chrome-web3-extension-service-worker.js",
 		"type": "module"
@@ -29,5 +29,15 @@
 	],
 	"content_security_policy": {
 		"extension_pages": "default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src 'self'; object-src 'self'; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:;"
+	},
+	 "icons": {
+		"16":  "static/ethereum-16.png",
+		"24":  "static/ethereum-24.png",
+		"32":  "static/ethereum-32.png",
+		"48":  "static/web3url-48.png",
+		"64":  "static/web3url-64.png",
+		"72":  "static/web3url-72.png",
+		"96":  "static/web3url-96.png",
+		"128": "static/web3url-128.png"
 	}
 }

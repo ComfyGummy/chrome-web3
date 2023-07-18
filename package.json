@@ -14,7 +14,7 @@
   },
   "private": true,
   "scripts": {
-    "build": "yarn webpack && cp src/manifest.json dist/"
+    "build": "yarn webpack && cp -ar src/manifest.json src/static dist/"
   },
   "dependencies": {
     "buffer": "^6.0.3",
