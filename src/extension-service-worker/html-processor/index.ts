@@ -6,6 +6,7 @@ const chromeExtensionPrefix = chrome.runtime.getURL('/');
 const web3ScriptUrlScheme = 'web3scripturl://';
 const web3ScriptInlineScheme = 'web3scriptinline://';
 const web3ScriptInitScheme = 'web3scriptinit://';
+const web3FaviconScheme = 'web3favicon://';
 const htmlTagRegex = /<html(?:\s[^>]*)?>/i;
 const headTagRegex = /<head(?:\s[^>]*)?>/i;
 const baseTagRegexGlobal = /<base(?:\s[^>]*)?>/gi;
@@ -17,9 +18,11 @@ const nakedAttributeRegex = /([-_\w\.]+)/i;
 
 export class htmlProcessor {
 	readonly url: web3Url;
+	foundFavicon: boolean;
 
 	constructor(url: web3Url) {
 		this.url = url;
+		this.foundFavicon = false;
 	}
 
 	// Processes a <script> tag match result.
@@ -141,6 +144,9 @@ export class htmlProcessor {
 		if (linkRel != 'stylesheet' && linkRel != 'icon') {
 			return '';
 		}
+		if (linkRel == 'icon') {
+			this.foundFavicon = true;
+		}
 		result.push('rel="' + linkRel + '"');
 		if (linkAs != '') {
 			result.push('as="' + he.encode(linkAs) + '"');
@@ -158,12 +164,19 @@ export class htmlProcessor {
 		return '<script src="' + chromeExtensionPrefix + web3ScriptInitScheme + Base64.encode(this.url.toString()) + '"></script>';
 	}
 
+	protected faviconTag = (): string => {
+		if (this.foundFavicon) {
+			return '';
+		}
+		return '<link rel="icon" href="' + chromeExtensionPrefix + web3FaviconScheme + he.encode(this.url.getRoot().toString()) + '" />';
+	}
+
 	// Rewrites HTML code to work in a chrome-extension context.
 	processHtml = (code: string): string => {
 		code = code.replaceAll(baseTagRegexGlobal, '');
 		code = code.replaceAll(linkTagRegexGlobal, this.processHTMLLinkTag);
 		code = code.replaceAll(scriptTagRegexGlobal, this.processHTMLScriptTag);
-		const injectedTags = this.baseTag() + this.initJavaScriptTag();
+		const injectedTags = this.baseTag() + this.initJavaScriptTag() + this.faviconTag();
 		const headMatch = code.match(headTagRegex);
 		if (headMatch) {
 			let insertIndex = headMatch.index + headMatch[0].length;

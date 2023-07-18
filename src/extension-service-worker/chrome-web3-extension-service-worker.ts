@@ -58,6 +58,7 @@ const web3Scheme = 'web3://';
 const web3ScriptUrlScheme = 'web3scripturl://';
 const web3ScriptInlineScheme = 'web3scriptinline://';
 const web3ScriptInitScheme = 'web3scriptinit://';
+const web3FaviconScheme = 'web3favicon://';
 const web3DevNullScheme = 'web3devnull://';
 const httpScheme = 'http://';
 const httpsScheme = 'https://';
@@ -214,6 +215,42 @@ async function serveWeb3ScriptInitRequest(extReq: extRequest): Promise<Response>
 	});
 }
 
+// Serves an extension request for the web3favicon:// URL scheme.
+async function serveWeb3FaviconRequest(extReq: extRequest): Promise<Response> {
+	const origin = new web3Url(extReq.url.substring(web3FaviconScheme.length));
+	const pngIconPromise = fetchUrl(origin.resolve('/favicon.png').toString());
+	const icoIconPromise = fetchUrl(origin.resolve('/favicon.ico').toString());
+	let successPromise = null;
+	let remainingPromises = [pngIconPromise, icoIconPromise];
+	while (successPromise === null && remainingPromises.length > 0) {
+		let raceWinner = Promise.race(remainingPromises);
+		try {
+			successPromise = await raceWinner;
+		} catch (e) {
+			successPromise = null;
+			let pendingPromises = [];
+			for (let promise of remainingPromises) {
+				let status = await Promise.race([promise, 'pending']).then(
+					(value) => {
+						return value === 'pending' ? 'pending' : 'fulfilled';
+					},
+					(reason) => {
+						return 'rejected';
+					},
+				);
+				if (status == 'pending') {
+					pendingPromises.push(promise);
+				}
+			}
+			remainingPromises = pendingPromises;
+		}
+	}
+	if (successPromise === null) {
+		return makeResponse('', 404, {});
+	}
+	return makeWeb3Response(successPromise, null, null);
+}
+
 // Serves an extension request for the web3devnull:// URL scheme.
 async function serveWeb3DevNullRequest(extReq: extRequest): Promise<Response> {
 	const maybeMimeType = extReq.url.substring(web3DevNullScheme.length);
@@ -248,6 +285,8 @@ async function handleRequest(request: Request): Promise<Response> {
 		return serveWeb3ScriptInitRequest(extReq);
 	} else if (url.startsWith(web3DevNullScheme)) {
 		return serveWeb3DevNullRequest(extReq);
+	} else if (url.startsWith(web3FaviconScheme)) {
+		return serveWeb3FaviconRequest(extReq);
 	} else {
 		let w3url: web3Url;
 		try {
