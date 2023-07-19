@@ -141,6 +141,15 @@ async function serveWeb3Request(w3url: web3Url): Promise<Response> {
 	}
 }
 
+// Serves an extension request for the https:// or http:// URL scheme.
+async function serveHttpRequest(extReq: extRequest): Promise<Response> {
+	return fetch(extReq.url, {
+		'method': 'GET',
+		'mode': 'cors',
+		'redirect': 'follow',
+	});
+}
+
 // Serves an extension request for the web3scripturl:// URL scheme.
 async function serveWeb3ScriptURLRequest(extReq: extRequest): Promise<Response> {
 	const encodedUrl = extReq.url.substring(web3ScriptUrlScheme.length);
@@ -292,6 +301,9 @@ async function handleRequest(request: Request): Promise<Response> {
 		try {
 			w3url = new web3Url(extReq.url);
 		} catch (e) {
+			if (url.startsWith(httpsScheme) || url.startsWith(httpScheme)) {
+				return serveHttpRequest(extReq);
+			}
 			return makeResponse('invalid request', 400, {});
 		}
 		return serveWeb3Request(w3url);

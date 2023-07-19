@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "web3://",
-	"version": "0.1",
+	"version": "0.2",
 	"description": "[Pre-release] Access web3:// URLs",
 	"background": {
 		"service_worker": "chrome-web3-extension-service-worker.js",

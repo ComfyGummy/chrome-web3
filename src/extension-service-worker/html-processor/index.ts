@@ -11,8 +11,8 @@ const htmlTagRegex = /<html(?:\s[^>]*)?>/i;
 const headTagRegex = /<head(?:\s[^>]*)?>/i;
 const baseTagRegexGlobal = /<base(?:\s[^>]*)?>/gi;
 const linkTagRegexGlobal = /<link(|\s[^>]*)>/gi;
-const scriptTagRegexGlobal = /<script((?:\s[^>]*)?)>((?:(?!<\/script).)*?)<\/script\s*>/gi;
-const quotedAttributeRegex = /([-_\w\.]+)=(['"])((?:(?!\2).)*)\2/i;
+const scriptTagRegexGlobal = /<script((?:\s[^>]*)?)>((?:(?!<\/script).)*?)<\/script\s*>/sgi;
+const quotedAttributeRegex = /([-_\w\.]+)=(['"])((?:(?!\2).)*)\2/si;
 const unquotedAttributeRegex = /([-_\w\.]+)=\S*/i;
 const nakedAttributeRegex = /([-_\w\.]+)/i;
 
