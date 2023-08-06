@@ -65,17 +65,18 @@ const httpsScheme = 'https://';
 
 // Creates an HTTP Response object with the given body, response code, and HTTP headers.
 function makeResponse(body: httpBody, responseCode: number, headers: httpHeaders): Response {
-	let responseOptions: ResponseInit = {
-		'status': responseCode,
-		'headers': {
-			'cache-control': 'max-age=1800',
-			'content-security-policy': "default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:; worker-src * self blob: data: gap:;",
-			'content-type': 'application/octet-stream',
-		},
+	let responseHeaders: httpHeaders = {
+		'cache-control': 'max-age=1800',
+		'content-security-policy': "default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:; worker-src * self blob: data: gap:;",
+		'content-type': 'application/octet-stream',
 	};
 	for (let i in headers) {
-		responseOptions['headers'][i.toLowerCase()] = headers[i];
+		responseHeaders[i.toLowerCase()] = headers[i];
 	}
+	let responseOptions: ResponseInit = {
+		'status': responseCode,
+		'headers': responseHeaders,
+	};
 	if ((body instanceof Uint8Array) || (typeof(body) == 'string')) {
 		return new Response(new Blob([body]), responseOptions);
 	}
@@ -101,7 +102,7 @@ async function makeWeb3Response(web3Promise: Promise<web3FetchResult>, forceMime
 			}
 			body = new TextEncoder().encode(stringBody);
 		}
-		let headers = {};
+		let headers: httpHeaders = {};
 		if (mimeType !== null && mimeType != '') {
 			headers['content-type'] = mimeType;
 		}
@@ -263,7 +264,7 @@ async function serveWeb3FaviconRequest(extReq: extRequest): Promise<Response> {
 // Serves an extension request for the web3devnull:// URL scheme.
 async function serveWeb3DevNullRequest(extReq: extRequest): Promise<Response> {
 	const maybeMimeType = extReq.url.substring(web3DevNullScheme.length);
-	let headers = {};
+	let headers: httpHeaders = {};
 	if (maybeMimeType !== '') {
 		headers['content-type'] = maybeMimeType;
 	}
