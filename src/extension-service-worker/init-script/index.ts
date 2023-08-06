@@ -43,14 +43,15 @@ const testHttpUrlEsc = escape(testHttpUrl);
 const mimeTypeTextJavascriptEsc = escape(mimeTypeTextJavascript);
 
 // Prevent changes to a property of a given object.
-function sealProperty(obj: jsVarName, propName: jsVarName, value: jsExpression): jsStatement {
+function sealProperty(obj: jsVarName, propName: jsVarName, propDict: jsExpression): jsStatement {
 	let escapedProp = escape(propName);
 	return (
 `(() => {
 	let obj = ${obj};
+	let propDict = ${propDict};
 	while (obj !== null) {
 		if (Object.getOwnPropertyDescriptor(obj, ${escapedProp})) {
-			Object.defineProperty(obj, ${escapedProp}, {"value": ${value}, "writable": false, "configurable": false});
+			Object.defineProperty(obj, ${escapedProp}, propDict);
 		}
 		obj = Object.getPrototypeOf(obj);
 	}
@@ -58,12 +59,16 @@ function sealProperty(obj: jsVarName, propName: jsVarName, value: jsExpression):
 	);
 }
 
+function sealPropertyToValue(obj: jsVarName, propName: jsVarName, value: jsExpression): jsStatement {
+	return sealProperty(obj, propName, `{"value": ${value}, "writable": false, "configurable": false}`);
+}
+
 // Nullify a property of the window object.
 function nullWindowProperty(propName: jsVarName): jsStatements {
 	return [
 		'var ' + propName + ' = null',
 		'window.' + propName + ' = null',
-		sealProperty('window', propName, 'null'),
+		sealPropertyToValue('window', propName, 'null'),
 	];
 }
 
@@ -71,7 +76,7 @@ function nullWindowProperty(propName: jsVarName): jsStatements {
 function nullNavigatorProperty(propName: jsVarName): jsStatements {
 	return [
 		'navigator.' + propName + ' = null',
-		sealProperty('navigator', propName, 'null'),
+		sealPropertyToValue('navigator', propName, 'null'),
 	];
 }
 
@@ -120,6 +125,102 @@ function getSetter(obj: jsVarName, propName: jsVarName): jsExpression {
 	);
 }
 
+function getEmulatedStorage(): jsExpression {
+	return (
+`(() => {
+	let backing = {};
+	let storageObject = {
+		'key': ((index) => {
+			let i = 0;
+			for (let keyName in backing) {
+				if (i == index) {
+					return keyName;
+				}
+				i++;
+			}
+			return null;
+		}),
+		'getItem': ((keyName) => {
+			let keyValue = backing[keyName];
+			if (keyValue === undefined) {
+				return null;
+			}
+			return keyValue;
+		}),
+		'setItem': ((keyName, keyValue) => {
+			backing[keyName] = keyValue;
+		}),
+		'removeItem': ((keyName) => {
+			delete backing[keyName];
+		}),
+		'clear': (() => {
+			let allKeys = [];
+			for (let keyName in backing) {
+				allKeys.push(keyName);
+			}
+			for (let keyName of allKeys) {
+				delete backing[keyName];
+			}
+		}),
+	};
+	Object.defineProperty(storageObject, "length", {
+		"get": () => {
+			let i = 0;
+			for (let keyName in backing) {
+				i++;
+			}
+			return i;
+		},
+		"configurable": false,
+	});
+	return storageObject;
+})()`
+	);
+}
+
+function getEmulatedCookieProperty(): jsExpression {
+	return (
+`(() => {
+	let cookies = {};
+	return {
+		'get': () => {
+			let cookieString = '';
+			let isFirstCookie = true;
+			for (let keyName in cookies) {
+				if (!isFirstCookie) {
+					cookieString += ';';
+				} else {
+					isFirstCookie = false;
+				}
+				let cookieValue = cookies[keyName];
+				if (cookieValue === '') {
+					cookieString += keyName;
+				} else {
+					cookieString += keyName + '=' + cookieValue;
+				}
+			}
+			return cookieString;
+		},
+		'set': (newCookie) => {
+			let semicolonIndex = newCookie.indexOf(';');
+			if (semicolonIndex !== -1) {
+				newCookie = newCookie.substring(0, semicolonIndex);
+			}
+			let equalIndex = newCookie.indexOf('=');
+			if (equalIndex !== -1) {
+				let keyName = newCookie.substring(0, equalIndex);
+				let cookieValue = newCookie.substring(equalIndex + 1);
+				cookies[keyName] = cookieValue;
+			} else {
+				cookies[newCookie] = '';
+			}
+		},
+		'configurable': false,
+	};
+})()`
+	);
+}
+
 // Prevent manipulation of new window objects through `window.open`.
 const wrapWindowOpen = [wrapFunction('window', 'open', {
 	'argNames': ['url', 'target', 'windowFeatures'],
@@ -131,10 +232,19 @@ const wrapWindowOpen = [wrapFunction('window', 'open', {
 	},
 })];
 
+const emulateStorage: jsStatements = [
+	sealPropertyToValue('window', 'localStorage', getEmulatedStorage()),
+	`var localStorage = window.localStorage`,
+	sealPropertyToValue('window', 'sessionStorage', getEmulatedStorage()),
+	`var sessionStorage = window.sessionStorage`,
+	sealProperty('document', 'cookie', getEmulatedCookieProperty()),
+];
+
 const staticInit: jsStatements = [].concat(
 	nullWindowProperty('chrome'),
 	nullWindowProperty('browser'),
 	wrapWindowOpen,
+	emulateStorage,
 	nullNavigatorProperty('registerProtocolHandler'),
 );
 
