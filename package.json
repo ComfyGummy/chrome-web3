@@ -21,6 +21,6 @@
     "he": "^1.2.0",
     "js-base64": "^3.7.5",
     "path-browserify": "^1.0.1",
-    "web3protocol": "^0.1.2"
+    "web3protocol": "^0.2.0"
   }
 }
