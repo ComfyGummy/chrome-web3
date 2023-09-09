@@ -1,5 +1,5 @@
 import { web3Url } from './web3-url';
-import { htmlProcessor, looksLikeHTML } from './html-processor';
+import { htmlProcessor, looksLikeHTML, looksLikeCSS } from './html-processor';
 import { initScript } from './init-script';
 import { getDeclarativeNetRequestRules, getAllPastDeclarativeNetRequestRuleIds } from './declarative-net-request-rules';
 const { parseUrl, fetchParsedUrl, fetchUrl } = require('web3protocol');
@@ -59,6 +59,7 @@ const web3ScriptUrlScheme = 'web3scripturl://';
 const web3ScriptInlineScheme = 'web3scriptinline://';
 const web3ScriptInitScheme = 'web3scriptinit://';
 const web3FaviconScheme = 'web3favicon://';
+const web3StylesheetScheme = 'web3stylesheet://';
 const web3DevNullScheme = 'web3devnull://';
 const httpScheme = 'http://';
 const httpsScheme = 'https://';
@@ -134,11 +135,18 @@ async function serveWeb3Request(w3url: web3Url): Promise<Response> {
 		}
 		return makeWeb3Response(web3Promise, 'text/plain', null);
 	}
-	if (result.mimeType == 'text/html' || result.mimeType == 'application/xhtml+xml' || looksLikeHTML(String(result.output))) {
+	const data = String(result.output);
+	if (result.mimeType == 'text/html' || result.mimeType == 'application/xhtml+xml' || looksLikeHTML(data)) {
 		let processor = new htmlProcessor(w3url);
 		return makeWeb3Response(web3Promise, 'text/html', [processor.processHtml]);
 	} else {
-		return makeWeb3Response(web3Promise, null, null);
+		let mimeType = result.mimeType;
+		if (!mimeType) {
+			if (looksLikeCSS(data)) {
+				mimeType = 'text/css';
+			}
+		}
+		return makeWeb3Response(web3Promise, mimeType, null);
 	}
 }
 
@@ -225,6 +233,12 @@ async function serveWeb3ScriptInitRequest(extReq: extRequest): Promise<Response>
 	});
 }
 
+async function serveWeb3StylesheetRequest(extReq: extRequest): Promise<Response> {
+	const decodedUrl = web3Scheme + extReq.url.substring(web3StylesheetScheme.length);
+	const w3url = new web3Url(decodedUrl);
+	return makeWeb3Response(fetchUrl(w3url.toString()), 'text/css', null);
+}
+
 // Serves an extension request for the web3favicon:// URL scheme.
 async function serveWeb3FaviconRequest(extReq: extRequest): Promise<Response> {
 	const origin = new web3Url(extReq.url.substring(web3FaviconScheme.length));
@@ -295,6 +309,8 @@ async function handleRequest(request: Request): Promise<Response> {
 		return serveWeb3ScriptInitRequest(extReq);
 	} else if (url.startsWith(web3DevNullScheme)) {
 		return serveWeb3DevNullRequest(extReq);
+	} else if (url.startsWith(web3StylesheetScheme)) {
+		return serveWeb3StylesheetRequest(extReq);
 	} else if (url.startsWith(web3FaviconScheme)) {
 		return serveWeb3FaviconRequest(extReq);
 	} else {

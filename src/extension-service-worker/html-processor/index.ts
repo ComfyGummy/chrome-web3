@@ -3,9 +3,11 @@ const he = require('he');
 const Base64 = require('js-base64');
 
 const chromeExtensionPrefix = chrome.runtime.getURL('/');
+const web3UrlScheme = 'web3://';
 const web3ScriptUrlScheme = 'web3scripturl://';
 const web3ScriptInlineScheme = 'web3scriptinline://';
 const web3ScriptInitScheme = 'web3scriptinit://';
+const web3StylesheetScheme = 'web3stylesheet://';
 const web3FaviconScheme = 'web3favicon://';
 const htmlTagRegex = /<html(?:\s[^>]*)?>/i;
 const headTagRegex = /<head(?:\s[^>]*)?>/i;
@@ -15,6 +17,9 @@ const scriptTagRegexGlobal = /<script((?:\s[^>]*)?)>((?:(?!<\/script).)*?)<\/scr
 const quotedAttributeRegex = /([-_\w\.]+)=(['"])((?:(?!\2).)*)\2/si;
 const unquotedAttributeRegex = /([-_\w\.]+)=\S*/i;
 const nakedAttributeRegex = /([-_\w\.]+)/i;
+const cssCommentsRegexGlobal = /\/\*.*?\*\//sgi;
+const cssRuleRegex = /^[-_\.#"'\[\]\w]+\s*(?:,\s*[-_\.#"'\[\]\w]+\s*)*\{/i;
+const cssAtRuleRegex = /^@(?:-|font|charset|keyframes|media)\b/i;
 
 export class htmlProcessor {
 	readonly url: web3Url;
@@ -151,7 +156,15 @@ export class htmlProcessor {
 		if (linkAs != '') {
 			result.push('as="' + he.encode(linkAs) + '"');
 		}
-		result.push('href="' + he.encode(this.url.extensionMaybeHttp(linkHref)) + '"');
+		let linkUrl = this.url.maybeHttp(linkHref);
+		if (linkUrl.startsWith(web3UrlScheme)) {
+			if (linkRel == 'stylesheet') {
+				linkUrl = chromeExtensionPrefix + web3StylesheetScheme + (new web3Url(linkUrl)).toString().substr(web3UrlScheme.length);
+			} else {
+				linkUrl = chromeExtensionPrefix + linkUrl
+			}
+		}
+		result.push('href="' + he.encode(linkUrl) + '"');
 		result.push('/>');
 		return result.join(' ');
 	}
@@ -204,6 +217,15 @@ export function looksLikeHTML(code: string): boolean {
 		return true;
 	}
 	if (lowerCode.indexOf('<head') != -1) {
+		return true;
+	}
+	return false;
+}
+
+// Returns whether the given string looks like CSS.
+export function looksLikeCSS(code: string): boolean {
+	const noCommentsCode = code.toLowerCase().replaceAll(cssCommentsRegexGlobal, '').trimStart();
+	if (noCommentsCode.match(cssRuleRegex) || noCommentsCode.match(cssAtRuleRegex)) {
 		return true;
 	}
 	return false;

@@ -19,6 +19,9 @@ export class web3Url {
 	readonly path:     string;
 
 	constructor(url: string) {
+		if (url.startsWith(chromeExtensionPrefix)) {
+			url = url.substr(chromeExtensionPrefix.length);
+		}
 		let matchResult = null;
 		if (url.startsWith(web3Scheme)) {
 			matchResult = url.match(web3UrlRegex);
