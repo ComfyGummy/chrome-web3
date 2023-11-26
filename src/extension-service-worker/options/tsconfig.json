@@ -1,21 +1,18 @@
 {
-	"extends": "./../tsconfig.base.json",
+	"extends": "./../../tsconfig.base.json",
 	"compilerOptions": {
-		"moduleResolution": "node",
 		"types": [
-			"bootstrap",
 			"chrome",
 			"jquery",
 			"node",
 		],
 		"lib": [
-			"webworker",
 			"ES2021.String",
 			"dom",
 		],
 	},
 	"include": [
 		".",
-		"../../typings",
+		"../../../typings",
 	],
 }

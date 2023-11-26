@@ -8,8 +8,13 @@
 		"type": "module"
 	},
 	"permissions": [
-		"declarativeNetRequest"
+		"declarativeNetRequest",
+		"storage"
 	],
+	"options_ui": {
+		"page": "static/options.html",
+		"open_in_tab": true
+	},
 	"omnibox": {
 		"keyword" : "web3"
 	},

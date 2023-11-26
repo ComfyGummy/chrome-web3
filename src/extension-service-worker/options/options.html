@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+<title>Chrome web3</title>
+<link href="/options/bootstrap.css" rel="stylesheet" />
+<link href="/options/options.css" rel="stylesheet" />
+</head>
+<body>
+<script src="/options/jquery.raw.js"></script>
+<script src="/options/bootstrap.raw.js"></script>
+<script src="/options/options.js"></script>
+
+<div id="ethereum-logo">
+	<img class="logo" src="/options/ethereum.svg" alt="Ethereum" />
+</div>
+
+<h1>Ready to browse onchain?</h1>
+
+<div id="preflight-checks">
+	<h2>
+		<img class="status" id="status-main" src="/options/spinner.svg" alt="&#x231B;" />
+		<div class="explanation" id="explanation-main">A couple of preflight checks before we begin...</div>
+	</h2>
+
+	<div class="card preflight" id="chain-configs">
+		<div class="card-header" id="chain-configs-header">
+			<h3 class="mb-0 collapse-header">
+				<button class="btn btn-link header-toggle" type="button" data-toggle="collapse" data-target="#chain-configs-form">
+					<img class="status" src="/options/spinner.svg" alt="&#x231B;" />
+					<div class="explanation">Checking if all chain RPC endpoints are configured...</div>
+				</button>
+			</h3>
+		</div>
+		<div id="chain-configs-form" class="collapse" data-parent="#preflight-checks">
+			<div class="card-body action">
+				<form method="POST" action="#">
+					<h2>Blockchain providers</h2>
+					<p>
+						Chrome will use these providers to access blockchain data.
+						<strong>These providers will be able to record your web3 browsing history</strong>,
+						similar to how your ISP may monitor your network connection.
+						You can <a href="#" class="rpc-endpoints-use-defaults">use default public providers</a>,
+						or run your own nodes to access onchain websites verifiably and more privately.
+						If multiple providers are configured for the same chain,
+						your browser will query all providers in parallel and use the first response.
+					</p>
+					<table>
+						<thead>
+							<th scope="col" class="column-chain">Chain</th>
+							<th scope="col" class="column-configured-providers">Configured providers</th>
+							<th scope="col" class="column-public-providers">
+								<span>Public providers</span>
+								<button class="btn btn-success rpc-endpoints-use-public">Use public providers for all chains</button>
+							</th>
+						</thead>
+						<tbody id="chain-configs-tbody">
+						</tbody>
+					</table>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="ready-to-browse">
+	<h2>
+		<img class="status" src="/options/done.svg" alt="&#x2705;" />
+		You're all set!
+	</h2>
+
+	<p>Your browser is ready to go onchain. Not sure where to start?</p>
+
+	<ul>
+		<li>
+			<a href="/web3://w3url.eth" target="_blank">
+				<img src="/options/web3-url.png" alt="web3://" title="web3:// URLs" />
+				<div>Learn more about web3:// URLs</div>
+			</a>
+		</li>
+		<li>
+			<a href="/web3://vitalikblog.eth" target="_blank">
+				<img src="/options/vitalik-blog.jpg" alt="Vitalik Buterin" title="Vitalik Buterin's blog" />
+				<div>Read Vitalik Buterin's onchain blog</div>
+			</a>
+		</li>
+		<li>
+			<a href="https://github.com/ComfyGummy/chrome-web3" target="_blank">
+				<img src="/options/github.svg" alt="GitHub" title="GitHub page of the extension" />
+				<div>Contribute to the extension</div>
+			</a>
+		</li>
+	</ul>
+</div>
+</body>
+</html>

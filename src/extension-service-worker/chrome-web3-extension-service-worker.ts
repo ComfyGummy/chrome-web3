@@ -1,15 +1,12 @@
+import { developmentMode } from './development-mode';
 import { web3Url } from './web3-url';
+import { web3Client, web3FetchResult } from './web3-request';
 import { htmlProcessor, looksLikeHTML, looksLikeCSS } from './html-processor';
 import { initScript } from './init-script';
 import { getDeclarativeNetRequestRules, getAllPastDeclarativeNetRequestRuleIds } from './declarative-net-request-rules';
-const { parseUrl, fetchParsedUrl, fetchUrl } = require('web3protocol');
+import { getConfig } from './config';
+import { renderOptionsUrl } from './options-handler';
 const { Base64 } = require('js-base64');
-
-// Returns whether development mode is enabled.
-// When it is enabled, extra logging is done to the console.
-function developmentMode() {
-	return true;
-}
 
 // Represents a request made to the extension.
 interface extRequest {
@@ -17,26 +14,6 @@ interface extRequest {
 	request: Request;
 	// The rewritten URL that we are serving.
 	url: string;
-}
-
-// The result of resolving the "domain" component of an ERC-4804 address.
-interface web3UrlNameResolution {
-	chainId: number;
-	resolvedName: string;
-}
-
-// An origin for a ERC-4804 URL.
-interface web3Origin {
-	nameResolution: web3UrlNameResolution;
-	contractAddress: string;
-	chainId: number;
-}
-
-// The result of fetching a ERC-4804 URL.
-interface web3FetchResult {
-	output: Uint8Array;
-	mimeType?: string;
-	parsedUrl: web3Origin;
 }
 
 // Accepted types that can be served back to the user.
@@ -63,6 +40,11 @@ const web3StylesheetScheme = 'web3stylesheet://';
 const web3DevNullScheme = 'web3devnull://';
 const httpScheme = 'http://';
 const httpsScheme = 'https://';
+const staticOptionsPage = 'static/options.html';
+const optionsUrl = 'options';
+
+// Web3 URL client.
+const client = new web3Client();
 
 // Creates an HTTP Response object with the given body, response code, and HTTP headers.
 function makeResponse(body: httpBody, responseCode: number, headers: httpHeaders): Response {
@@ -91,23 +73,26 @@ function makeResponse(body: httpBody, responseCode: number, headers: httpHeaders
 async function makeWeb3Response(web3Promise: Promise<web3FetchResult>, forceMime: string, processors: bodyProcessor[]): Promise<Response> {
 	try {
 		const result = await web3Promise;
-		let mimeType = result.mimeType;
-		if (forceMime !== null) {
-			mimeType = forceMime;
-		}
 		let body = result.output;
 		if (processors != null) {
-			let stringBody = String(body);
+			let stringBody = new TextDecoder().decode(body);
 			for (let processor of processors) {
 				stringBody = processor(stringBody);
 			}
 			body = new TextEncoder().encode(stringBody);
 		}
-		let headers: httpHeaders = {};
-		if (mimeType !== null && mimeType != '') {
-			headers['content-type'] = mimeType;
+		let httpCode = 200;
+		if (result.httpCode != null && result.httpCode != 0) {
+			httpCode = result.httpCode;
 		}
-		return makeResponse(body, 200, headers);
+		let headers: httpHeaders = {};
+		for (let header in result.httpHeaders) {
+			headers[header.toLowerCase()] = result.httpHeaders[header];
+		}
+		if (forceMime !== null && forceMime !== '') {
+			headers['content-type'] = forceMime;
+		}
+		return makeResponse(body, httpCode, headers);
 	} catch (e) {
 		if (developmentMode()) {
 			throw e;
@@ -124,7 +109,7 @@ async function makeWeb3Response(web3Promise: Promise<web3FetchResult>, forceMime
 
 // Serves an extension request for the web3:// URL scheme.
 async function serveWeb3Request(w3url: web3Url): Promise<Response> {
-	const web3Promise = fetchUrl(w3url.toString());
+	const web3Promise = client.fetchUrl(w3url);
 	let result: web3FetchResult;
 	try {
 		result = await web3Promise;
@@ -136,15 +121,19 @@ async function serveWeb3Request(w3url: web3Url): Promise<Response> {
 		return makeWeb3Response(web3Promise, 'text/plain', null);
 	}
 	const data = String(result.output);
-	if (result.mimeType == 'text/html' || result.mimeType == 'application/xhtml+xml' || looksLikeHTML(data)) {
+	let mimeType = null;
+	for (let header in result.httpHeaders) {
+		if (header.toLowerCase() == 'content-type') {
+			mimeType = result.httpHeaders[header];
+			break;
+		}
+	}
+	if (mimeType == 'text/html' || mimeType == 'application/xhtml+xml' || looksLikeHTML(data)) {
 		let processor = new htmlProcessor(w3url);
 		return makeWeb3Response(web3Promise, 'text/html', [processor.processHtml]);
 	} else {
-		let mimeType = result.mimeType;
-		if (!mimeType) {
-			if (looksLikeCSS(data)) {
-				mimeType = 'text/css';
-			}
+		if (mimeType === null && looksLikeCSS(data)) {
+			mimeType = 'text/css';
 		}
 		return makeWeb3Response(web3Promise, mimeType, null);
 	}
@@ -173,7 +162,7 @@ async function serveWeb3ScriptURLRequest(extReq: extRequest): Promise<Response> 
 		if (developmentMode()) {
 			console.log('Serving script URL request:', decodedUrl, 'decoded to', w3url);
 		}
-		return makeWeb3Response(fetchUrl(w3url.toString()), 'text/javascript', null);
+		return makeWeb3Response(client.fetchUrl(w3url), 'text/javascript', null);
 	}
 	if (!decodedUrl.startsWith(httpsScheme) && !decodedUrl.startsWith(httpScheme)) {
 		if (developmentMode()) {
@@ -236,14 +225,14 @@ async function serveWeb3ScriptInitRequest(extReq: extRequest): Promise<Response>
 async function serveWeb3StylesheetRequest(extReq: extRequest): Promise<Response> {
 	const decodedUrl = web3Scheme + extReq.url.substring(web3StylesheetScheme.length);
 	const w3url = new web3Url(decodedUrl);
-	return makeWeb3Response(fetchUrl(w3url.toString()), 'text/css', null);
+	return makeWeb3Response(client.fetchUrl(w3url), 'text/css', null);
 }
 
 // Serves an extension request for the web3favicon:// URL scheme.
 async function serveWeb3FaviconRequest(extReq: extRequest): Promise<Response> {
 	const origin = new web3Url(extReq.url.substring(web3FaviconScheme.length));
-	const pngIconPromise = fetchUrl(origin.resolve('/favicon.png').toString());
-	const icoIconPromise = fetchUrl(origin.resolve('/favicon.ico').toString());
+	const pngIconPromise = client.fetchUrl(origin.resolve('/favicon.png'));
+	const icoIconPromise = client.fetchUrl(origin.resolve('/favicon.ico'));
 	let successPromise = null;
 	let remainingPromises = [pngIconPromise, icoIconPromise];
 	while (successPromise === null && remainingPromises.length > 0) {
@@ -272,7 +261,7 @@ async function serveWeb3FaviconRequest(extReq: extRequest): Promise<Response> {
 	if (successPromise === null) {
 		return makeResponse('', 404, {});
 	}
-	return makeWeb3Response(successPromise, null, null);
+	return makeWeb3Response(Promise.resolve(successPromise), null, null);
 }
 
 // Serves an extension request for the web3devnull:// URL scheme.
@@ -313,6 +302,12 @@ async function handleRequest(request: Request): Promise<Response> {
 		return serveWeb3StylesheetRequest(extReq);
 	} else if (url.startsWith(web3FaviconScheme)) {
 		return serveWeb3FaviconRequest(extReq);
+	} else if (url == staticOptionsPage) {
+		return makeResponse('Redirecting...', 301, {
+			'location': chromeExtensionPrefix + optionsUrl,
+		});
+	} else if (url.startsWith(optionsUrl)) {
+		return renderOptionsUrl(url);
 	} else {
 		let w3url: web3Url;
 		try {
@@ -361,3 +356,26 @@ chrome.declarativeNetRequest.updateDynamicRules({
 	removeRuleIds: getAllPastDeclarativeNetRequestRuleIds(),
 	addRules: getDeclarativeNetRequestRules(),
 });
+
+interface chromeInstallEvent {
+	id?: string;
+	previousVersion?: string;
+	reason: chrome.runtime.OnInstalledReason;
+}
+
+export async function onExtensionInstall(ev: chromeInstallEvent) {
+	if (developmentMode()) {
+		console.log('Install event:', ev);
+	}
+	const conf = await getConfig();
+	if (!await conf.hasOpenedOptionsPage()) {
+		chrome.runtime.openOptionsPage();
+		conf.setHasOpenedOptionsPage(true);
+	}
+}
+
+chrome.runtime.onInstalled.addListener(onExtensionInstall);
+
+if (developmentMode()) {
+	console.log('Initialized.');
+}

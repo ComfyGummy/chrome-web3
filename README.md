@@ -71,7 +71,7 @@ The extension also adds "web3" as an [omnibox keyword]. This allows users to int
 
 ## How to install
 
-**This extension is not yet safe for widespread use.** Many functions that should enforce cross-origin isolation currently do not properly do this. This extension is also not yet thoroughly code-reviewed, and it still fails to display some `web3://` sites properly. Until all of this is fixed, it will not be available on the Chrome web store. You may still compile it manually and use it for demonstration purposes.
+**This extension is not yet safe for widespread use.** Many functions that should enforce cross-origin isolation currently do not properly do this. This extension still fails to display some `web3://` sites properly. Until all of this is fixed, it will not be available on the Chrome web store. You may still compile it manually and use it for demonstration purposes.
 
 ## How to compile
 
@@ -104,7 +104,7 @@ $ yarn install --frozen-lockfile
 $ yarn build
 ```
 
-If you have followed these instructions, the Chrome extension files are now in the `dist` subdirectory of the repository. You can load it into Chrome by enabling developer mode, then click "Load unpacked" and browse to the `dist` subdirectory.
+If you have followed these instructions, the Chrome extension files are now in the `dist/chrome-web3-extension` subdirectory of the repository. You can load it into Chrome by enabling developer mode, then click "Load unpacked" and browse to the `dist/chrome-web3-extension` subdirectory.
 
 ![Loading the unpacked extension](https://raw.githubusercontent.com/ComfyGummy/chrome-web3/main/img/screencast-extension-install.gif "Loading the unpacked extension")
 
