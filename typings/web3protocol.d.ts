@@ -1,6 +1,6 @@
 declare module 'web3protocol' {
 	export class Client {
-		constructor(chainList: any[]);
+		constructor(chainList: any[], opts: any);
 		fetchUrl(url: string): Promise<any>;
 	}
 };

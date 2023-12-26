@@ -23,7 +23,7 @@ interface httpHeaders {
 
 // The result of fetching a ERC-4804 URL.
 export interface web3FetchResult {
-	output: Uint8Array;
+	output: ReadableStream;
 	httpCode: number;
 	httpHeaders: httpHeaders;
 	parsedUrl: web3Origin;
@@ -39,7 +39,9 @@ export class web3Client {
 	}
 	initClient = async () => {
 		const defaultChainData = await this.config.toDefaultChainListData();
-		this.client = new Client(defaultChainData);
+		this.client = new Client(defaultChainData, {
+			'multipleRpcMode': 'parallel',
+		});
 	};
 	fetchUrl = async (url: web3Url): Promise<web3FetchResult> => {
 		if (this.client == null) {

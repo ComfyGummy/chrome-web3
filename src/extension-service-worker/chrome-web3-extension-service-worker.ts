@@ -66,6 +66,24 @@ function makeResponse(body: httpBody, responseCode: number, headers: httpHeaders
 	return new Response(body, responseOptions);
 }
 
+async function readAllStream(stream: ReadableStream): Promise<string> {
+	const chunks: Uint8Array[] = [];
+	const reader = stream.getReader();
+	return new Promise<string>(async (resolve, reject) => {
+		let done = false;
+		while (!done) {
+			const read = await reader.read();
+			if (read.value !== undefined && read.value !== null) {
+				chunks.push(read.value);
+			}
+			done = read.done;
+		}
+		const concatBuf = Buffer.concat(chunks);
+		const arrayBuf = concatBuf.buffer.slice(concatBuf.byteOffset, concatBuf.byteLength + concatBuf.byteOffset);
+		resolve(new TextDecoder().decode(arrayBuf));
+	});
+}
+
 // Create an HTTP Response object representing the content of the passed-in web3Promise.
 // forceMime may be used to override the mime-type returned in the response.
 // If the web3 request is successful, the list of processors will be run over the
@@ -73,9 +91,9 @@ function makeResponse(body: httpBody, responseCode: number, headers: httpHeaders
 async function makeWeb3Response(web3Promise: Promise<web3FetchResult>, forceMime: string, processors: bodyProcessor[]): Promise<Response> {
 	try {
 		const result = await web3Promise;
-		let body = result.output;
+		let body: httpBody = result.output;
 		if (processors != null) {
-			let stringBody = new TextDecoder().decode(body);
+			let stringBody = await readAllStream(body);
 			for (let processor of processors) {
 				stringBody = processor(stringBody);
 			}
